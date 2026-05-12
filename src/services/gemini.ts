@@ -16,22 +16,15 @@ export async function generateExcuses(
 ): Promise<ExcuseOutput> {
   const prompt = `
     Generate three types of excuses for a student in the following situation: "${situation}".
-    ${teacherName ? `The teacher's name is ${teacherName}.` : ""}
-    ${className ? `The class name is ${className}.` : ""}
-
-    Requirements:
-    1. Formal: Professional, polite, suitable for an email to a professor.
-    2. Casual: Friendly, using slang/emojis, suitable for a text or quick message.
-    3. Convincing: Detailed, realistic, hard to disprove, yet honest-sounding.
-    4. Belief Percentage: A random-sounding but plausible percentage (e.g., 78) of how likely a teacher is to believe this.
-
-    Return the result in JSON format.
+    ${teacherName ? `Target teacher: ${teacherName}.` : ""}
+    ${className ? `Target class: ${className}.` : ""}
   `;
 
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: prompt,
     config: {
+      systemInstruction: "You are LatePass, a helpful and witty AI assistant that generates excuses for students. Your excuses should be realistic, natural, and sometimes slightly funny, but never harmful, offensive, or illegal.",
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -46,5 +39,10 @@ export async function generateExcuses(
     },
   });
 
-  return JSON.parse(response.text);
+  const text = response.text;
+  if (!text) {
+    throw new Error("No response from AI");
+  }
+  
+  return JSON.parse(text);
 }

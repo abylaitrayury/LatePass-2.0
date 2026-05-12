@@ -43,6 +43,7 @@ export default function App() {
   const [teacherName, setTeacherName] = useState("");
   const [className, setClassName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [excuses, setExcuses] = useState<ExcuseOutput | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -62,13 +63,18 @@ export default function App() {
 
   const handleGenerate = async () => {
     setLoading(true);
+    setError(null);
     setStep("result");
     try {
-      const situationLabel = SITUATIONS.find(s => s.id === selectedSituation)?.label || selectedSituation;
+      let situationLabel = SITUATIONS.find(s => s.id === selectedSituation)?.label || selectedSituation;
+      if (selectedSituation === "other" && customSituation) {
+        situationLabel = customSituation;
+      }
       const data = await generateExcuses(situationLabel, teacherName, className);
       setExcuses(data);
-    } catch (error) {
-      console.error("Generation failed", error);
+    } catch (err) {
+      console.error("Generation failed", err);
+      setError("Failed to generate excuses. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -77,8 +83,12 @@ export default function App() {
   const reset = () => {
     setStep("choose");
     setSelectedSituation("");
+    setCustomSituation("");
     setExcuses(null);
+    setError(null);
   };
+
+  const [customSituation, setCustomSituation] = useState("");
 
   return (
     <div className="min-h-screen font-sans selection:bg-indigo-500/30">
@@ -172,6 +182,20 @@ export default function App() {
               </div>
 
               <div className="space-y-4">
+                {selectedSituation === "other" && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                      Describe your situation
+                    </label>
+                    <textarea
+                      placeholder="e.g. My cat ate my homework and then the power went out"
+                      value={customSituation}
+                      onChange={(e) => setCustomSituation(e.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-none"
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
                     Teacher Name
@@ -249,6 +273,16 @@ export default function App() {
                        <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin opacity-20" />
                     </div>
                   ))}
+                </div>
+              ) : error ? (
+                <div className="p-8 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 rounded-2xl text-center">
+                  <p className="text-red-600 dark:text-red-400 font-medium mb-4">{error}</p>
+                  <button
+                    onClick={handleGenerate}
+                    className="px-6 py-2 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors"
+                  >
+                    Try Again
+                  </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
